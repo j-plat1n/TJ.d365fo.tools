@@ -34,29 +34,27 @@ function Invoke-D365InstallAzCopy {
 
         [string] $Path = "C:\temp\d365fo.tools\AzCopy\AzCopy.exe"
     )
+$downloadPath = Join-Path -Path $Path -ChildPath "AzCopy.zip"
 
-    $azCopyFolder = Split-Path $Path -Parent
-    $downloadPath = Join-Path -Path $azCopyFolder -ChildPath "AzCopy.zip"
+if (-not (Test-Path -Path $Path)) { New-Item -ItemType Directory -Path $Path }
 
-    if (-not (Test-PathExists -Path $azCopyFolder -Type Container -Create)) { return }
+if (Test-PSFFunctionInterrupt) { return }
 
-    if (Test-PSFFunctionInterrupt) { return }
+Write-PSFMessage -Level Verbose -Message "Downloading AzCopy.zip from the internet. $($Url)" -Target $Url
+(New-Object System.Net.WebClient).DownloadFile($Url, $downloadPath)
 
-    Write-PSFMessage -Level Verbose -Message "Downloading AzCopy.zip from the internet. $($Url)" -Target $Url
-    (New-Object System.Net.WebClient).DownloadFile($Url, $downloadPath)
+if (-not (Test-Path -Path $downloadPath)) { Write-Host "File was not downloaded to $(downloadPath)" }
 
-    if (-not (Test-PathExists -Path $downloadPath -Type Leaf)) { return }
+Unblock-File -Path $downloadPath
 
-    Unblock-File -Path $downloadPath
+$tempExtractPath = Join-Path -Path $Path -ChildPath "Temp"
 
-    $tempExtractPath = Join-Path -Path $azCopyFolder -ChildPath "Temp"
+Expand-Archive -Path $downloadPath -DestinationPath $tempExtractPath -Force
 
-    Expand-Archive -Path $downloadPath -DestinationPath $tempExtractPath -Force
+$null = (Get-Item "$tempExtractPath\*\azcopy.exe").CopyTo($Path, $true)
 
-    $null = (Get-Item "$tempExtractPath\*\azcopy.exe").CopyTo($Path, $true)
+$tempExtractPath | Remove-Item -Force -Recurse
+$downloadPath | Remove-Item -Force -Recurse
 
-    $tempExtractPath | Remove-Item -Force -Recurse
-    $downloadPath | Remove-Item -Force -Recurse
-
-    Set-D365AzCopyPath -Path $Path
+Set-D365AzCopyPath -Path $Path
 }
