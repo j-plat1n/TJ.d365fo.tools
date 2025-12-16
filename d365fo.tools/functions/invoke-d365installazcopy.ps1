@@ -34,7 +34,7 @@ function Invoke-D365InstallAzCopy {
 
         [string] $Path = "C:\temp\d365fo.tools\AzCopy\AzCopy.exe"
     )
-$downloadPath = Join-Path -Path $Path -ChildPath "AzCopy.zip"
+$downloadPath = Join-Path -Path $Path -ChildPath $fileName
 
 if (-not (Test-Path -Path $Path)) { New-Item -ItemType Directory -Path $Path }
 
@@ -43,7 +43,7 @@ if (Test-PSFFunctionInterrupt) { return }
 Write-PSFMessage -Level Verbose -Message "Downloading AzCopy.zip from the internet. $($Url)" -Target $Url
 (New-Object System.Net.WebClient).DownloadFile($Url, $downloadPath)
 
-if (-not (Test-Path -Path $downloadPath)) { Write-Host "File was not downloaded to $(downloadPath)" }
+if (-not (Test-Path -Path $downloadPath)) { Write-Host "File was not downloaded to $($downloadPath)" }
 
 Unblock-File -Path $downloadPath
 
@@ -51,7 +51,7 @@ $tempExtractPath = Join-Path -Path $Path -ChildPath "Temp"
 
 Expand-Archive -Path $downloadPath -DestinationPath $tempExtractPath -Force
 
-$null = (Get-Item "$tempExtractPath\*\azcopy.exe").CopyTo($Path, $true)
+Copy-Item -Path "$tempExtractPath\*\azcopy.exe" -Destination $Path -Force -ErrorAction Stop
 
 $tempExtractPath | Remove-Item -Force -Recurse
 $downloadPath | Remove-Item -Force -Recurse
